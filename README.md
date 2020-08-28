@@ -14,12 +14,6 @@ namespace TaskManager{};
 ```C++
 void functionName(void);
 ```
-Они могут быть определены как в глобальной области, так и, если вам это удобно,
-в пространстве имен, которое вы создадите, например:
-
-```C++
-void Tasks::functionName(void);
-```
 
 ### Подключение к проекту
 
@@ -106,3 +100,36 @@ void loop()
 
 
 ### Функции-задачи
+Функции-задачи - это обычные функции вида
+
+```C++
+void Tasks::functionName(void);
+```
+объявляемые в глобальной области напрямую, либо в виде пространства имен
+
+```C++
+void Tasks::functionName(void);
+```
+Функции задачи могут вызывать друг друга или сами себя. Но для этого сначала надо их 
+предварительно объявить, например
+
+```C++
+namespace Tasks
+{
+  extern void task1 (void);
+  extern void task2 (void);
+  
+  void function1()
+  {
+    TaskManager::setTask_(function2, 10);
+  }
+  
+  void function2()
+  {
+   TaskManager::setTask_(function1, 0);
+  }
+}
+```
+Конечно же вы можете создать файлы Tasks.h и Tasks.cpp и поместить это все там.
+
+### Интерфейсные функции TaskManager
