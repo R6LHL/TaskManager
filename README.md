@@ -30,3 +30,77 @@ void Tasks::functionName(void);
 #define T_TASK_QUEUE_SIZE (5)
 #include <TaskManager.h>
 ```
+иначе компилятор выдаст ошибку "T_TASK_QUEUE_SIZE is not defined!"     
+!!!В библиотеке не предусмоторен контроль за переполнением очереди!!!  
+Следите сами сколько одновременно задач вы ставите в очередь.
+
+Далее, вам необходимо определиться, по какому из прерываний какого 
+из таймеров будет происходить движение очереди задач.
+Как было сказано выше, если используете Serial, то использовать Timer0
+не сможете. Но можно сделать так:
+
+```C++
+//configuration
+
+#define UART_ENABLED (1)
+
+#if UART_ENABLED == 1
+  const unsigned int UART_SPEED  = (9600);
+#endif
+////////////////////////////////////////////////
+
+//interrupt handlers
+
+#if UART_ENABLED == 1 //UART use TIMER0 so we use TIMER2 if UART is ENABLED
+ISR(TIMER2_OVF_vect)
+{
+  //Serial.println("Interrupt is working");
+  TaskManager::TimerTaskService_();
+}
+#else
+ISR(TIMER0_OVF_vect)
+{
+  //Serial.println("Interrupt is working");
+  TaskManager::TimerTaskService_();
+}
+#endif
+```
+Далее необходимо настроить периодичность прокрутки очереди, настроив периодичность
+переполнения таймера, прерывание которого вы используете. Я предпочитаю период в 1 мс.
+
+```C++
+#define CPU_CLOCK (16000000) 	// Hz at Nano328p
+
+void setup()
+{
+  noInterrupts();
+  
+/////////////////////////////////////
+#if UART_ENABLED == 1     //UART use TIMER0 so we use TIMER2 if UART is ENABLED
+  TCCR2B |= (1<<CS22);    // (clk/64)
+  TIMSK2 |= (1<<TOIE2);   // ovf interrupt enabled
+#else
+ TCCR0B |= (1<<CS02);     // (clk/64)
+ TIMSK0 |= (1<<TOIE0);    // ovf interrupt enabled
+#endif
+...
+```
+Осталось только добавить какую-нибудь начальную задачку и запустить обработку очереди:
+
+```C++
+...// мы еще в функции setup();
+   TaskManager::SetTask_(here_will_be_your_task_name_without_branches, 0); //если вторым аргументом стоит 0, задача запустится сразу
+   // как только выполнение перейдет к функции loop(). Вообще, это задержка выполнения задачи, в моём случае - в миллисекундах...
+
+} // конец функции Setup(); НЕ ЗАБУДЬТЕ РАЗРЕШИТЬ ПРЕРЫВАНИЯ ПО ТАЙМЕРАМ И ГЛОБАЛЬНО
+
+void loop()
+{
+  //Serial.println("Queue is processing");
+  TaskManager::ProcessTaskQueue_();
+  // Не надо больше сюда ничего писать.
+  // Все что должна делать ваша прошивка, должно быть сделано в функциях-задачах
+}
+```
+
+### Функции-задачи
