@@ -1,5 +1,5 @@
 /* 
-* TaskManger.h
+* TaskManager.h
 *
 * Created: 19.02.2018 20:04:55
 * Author: R6LHL
@@ -17,10 +17,10 @@
 namespace TaskManager
 {
 	//variables
-	 void (*(taskQueue_[T_TASK_QUEUE_SIZE]))(void);        // Array of function pointers
-	 void (*delayedTasksQueue_[T_TASK_QUEUE_SIZE])(void);  // Array of function pointers
-	 unsigned int taskDelaysQueue_[T_TASK_QUEUE_SIZE];   //
-	 void (*(currentTask_))(void);						// Function pointer
+	 void (*(taskQueue_[T_TASK_QUEUE_SIZE]))(void);        	// Array of function pointers
+	 void (*delayedTasksQueue_[T_TASK_QUEUE_SIZE])(void);  	// Array of function pointers
+	 unsigned int taskDelaysQueue_[T_TASK_QUEUE_SIZE];   	// Array of delays
+	 void (*(currentTask_))(void);				// Function pointer
 	 
 	 //functions
 	
