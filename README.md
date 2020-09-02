@@ -193,5 +193,9 @@ void ChangeTaskDelay_(sometask_name_without_branches, 10);
 ```
 если указатели в очереди совпадут с аргументом этой функции, то их задержки будут заменены на 10.
 
-## Служебные функции TaskManager
+### Полная очистка очереди задач
+
+```C++
+void clearTasks_(void);
+```
 
