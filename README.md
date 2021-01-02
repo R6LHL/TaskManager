@@ -51,13 +51,13 @@ TaskManager5 OS; //class constructor
 //interrupt handlers
 
 #if UART_ENABLED == 1 //UART use TIMER0 so we use TIMER2 if UART is ENABLED
-ISR(Timer2_OVF_vect)
+ISR(TIMER2_OVF_vect)
 {
   //Serial.println("Interrupt is working");
   OS.TimerTaskService_();
 }
 #else
-ISR(Timer0_OVF_vect)
+ISR(TIMER0_OVF_vect)
 {
   //Serial.println("Interrupt is working");
   OS.TimerTaskService_();
