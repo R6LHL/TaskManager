@@ -1,5 +1,5 @@
 /* 
-* TaskManager.h
+* TaskManger.h
 *
 * Created: 19.02.2018 20:04:55
 * Author: R6LHL
@@ -8,24 +8,32 @@
 #ifndef __TASKMANAGER_H__
 #define __TASKMANAGER_H__
 
-#ifndef T_TASK_QUEUE_SIZE
-#error T_TASK_QUEUE_SIZE is not defined! 
-#endif
-
 #include <Arduino.h>
 
-namespace TaskManager
+template <unsigned const char T_TASK_QUEUE_SIZE>
+class TaskManager
 {
-	//variables
-	 void (*(taskQueue_[T_TASK_QUEUE_SIZE]))(void);        	// Array of function pointers
-	 void (*delayedTasksQueue_[T_TASK_QUEUE_SIZE])(void);  	// Array of function pointers
-	 unsigned int taskDelaysQueue_[T_TASK_QUEUE_SIZE];   	// Array of delays
-	 void (*(currentTask_))(void);				// Function pointer
-	 
-	 //functions
 	
-	void clearTasks_(void)
-{
+	//variables
+	 void (*(taskQueue_[T_TASK_QUEUE_SIZE]))(void);        // Array of function pointers
+	 void (*delayedTasksQueue_[T_TASK_QUEUE_SIZE])(void);  // Array of function pointers
+	 unsigned int taskDelaysQueue_[T_TASK_QUEUE_SIZE];   //
+	 void (*(currentTask_))(void);						// Function pointer
+	 
+	public:
+	
+	TaskManager(void){
+		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; i++)
+		{
+			taskQueue_[i] = 0;
+			delayedTasksQueue_[i] = 0;
+			taskDelaysQueue_[i] = 0;
+		}
+	}
+	
+	//functions
+	
+	void clearTasks_(void){
 	noInterrupts();
 	
 	for (byte i=0; i < T_TASK_QUEUE_SIZE; ++i)
@@ -40,8 +48,7 @@ namespace TaskManager
 	interrupts();
 }
 
-void ProcessTaskQueue_(void)
-{
+void ProcessTaskQueue_(void){
 	noInterrupts();
 	
 	currentTask_ = taskQueue_[0]; // set taskQueue[0] to execute
@@ -61,8 +68,8 @@ void ProcessTaskQueue_(void)
 		// execute current task
 }
 
-void TimerTaskService_(void)							// This function must be called from timer interrupt handler
-{																	// So it haven't cli() and sei()
+void TimerTaskService_(void){						// This function must be called from timer interrupt handler
+																	// So it haven't cli() and sei()
 	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)			// Check taskDelaysQueue for !=0 and decrement it
 	{
 		if (taskDelaysQueue_[i] != 0)
@@ -85,8 +92,8 @@ void TimerTaskService_(void)							// This function must be called from timer in
 	}
 }
 
-void SetTask_(void(*f)(void), unsigned int t)
-{
+void SetTask_(void(*f)(void), unsigned int t){
+	
 	bool copy_detected = false;
 	
 	noInterrupts();
@@ -117,8 +124,8 @@ void SetTask_(void(*f)(void), unsigned int t)
 		
 }
 
-void DeleteTask_(void(*f)(void))
-{
+void DeleteTask_(void(*f)(void)){
+	
 	noInterrupts();
 		
 	if (currentTask_ == f)
@@ -143,8 +150,8 @@ void DeleteTask_(void(*f)(void))
 	interrupts();
 }
 
-void ChangeTaskDelay_(void(*f)(void), unsigned int t)
-{
+void ChangeTaskDelay_(void(*f)(void), unsigned int t){
+	
 	noInterrupts();
 		
 	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
@@ -159,6 +166,8 @@ void ChangeTaskDelay_(void(*f)(void), unsigned int t)
 	
 }
 	
-}
+};
+
+
 
 #endif
