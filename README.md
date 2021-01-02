@@ -9,12 +9,7 @@
 Занимает это все порядка 700 байт Flash и 16 байт SRAM (без учета очереди задач).
 Планировщик использует один из таймеров контроллера (вы сами выбираете какой). Например, на плате Nano328, 
 если в прошивке используется Serial, то использовать Timer0 не получится.
-Сам TaskManager написан в виде набора переменных и функций в пространстве имён:
-
-```C++
-namespace TaskManager{};
-```
-таким образом TaskManager использует минимум памяти программ и оперативной памяти.
+Сам TaskManager выполнен в виде шаблона класса.
 Задачи планировщика представляют собой функции вида:
 
 ```C++
@@ -27,11 +22,13 @@ void functionName(void);
 очереди задач (массив указателей на функции), например:
 
 ```C++
-#define T_TASK_QUEUE_SIZE (5)
 #include <TaskManager.h>
-```
-иначе компилятор выдаст ошибку "T_TASK_QUEUE_SIZE is not defined!"     
-!!!В библиотеке не предусмоторен контроль за переполнением очереди!!!  
+
+unsigned const char T_TASK_QUEUE_SIZE = 5;  //for Task Manager - size of Task Queue
+
+typedef TaskManager <T_TASK_QUEUE_SIZE> TaskManager5; //define task manager with queue size lenght = 5
+TaskManager5 OS; //class constructor
+``` 
 Следите сами сколько одновременно задач вы ставите в очередь.
 Также ничто не подскажет вам, что очередь задач пуста (кроме того, что ваше устройство, по-видимому, зависло)
 и постоянно выполняется функция loop() и ничего более.
@@ -57,13 +54,13 @@ void functionName(void);
 ISR(TIMER2_OVF_vect)
 {
   //Serial.println("Interrupt is working");
-  TaskManager::TimerTaskService_();
+  OS.TimerTaskService_();
 }
 #else
 ISR(TIMER0_OVF_vect)
 {
   //Serial.println("Interrupt is working");
-  TaskManager::TimerTaskService_();
+  OS.TimerTaskService_();
 }
 #endif
 ```
@@ -90,8 +87,8 @@ void setup()
 Осталось только добавить какую-нибудь начальную задачку и запустить обработку очереди:
 
 ```C++
-...// мы еще в функции setup();
-   TaskManager::SetTask_(here_will_be_your_task_name_without_branches, 0); 
+// ...мы еще в функции setup();
+    OS::SetTask_(here_will_be_your_task_name_without_branches, 0); 
    //если вторым аргументом стоит 0, задача запустится 
    // сразу, как только выполнение перейдет к функции loop(). Вообще, это задержка выполнения задачи, в моём случае - 
    //в миллисекундах... Сколько можно задать максимум? Столько, сколько позволяет unsigned int.
@@ -101,7 +98,7 @@ void setup()
 void loop()
 {
   //Serial.println("Queue is processing");
-  TaskManager::ProcessTaskQueue_();
+  OS::ProcessTaskQueue_();
   // Не надо больше сюда ничего писать.
   // Все что должна делать ваша прошивка, должно быть сделано в функциях-задачах
 }
@@ -130,12 +127,12 @@ namespace Tasks
   
   void function1()
   {
-    TaskManager::setTask_(function2, 10);
+    OS::setTask_(function2, 10);
   }
   
   void function2()
   {
-   TaskManager::setTask_(function1, 0);
+   OS::setTask_(function1, 0);
   }
 }
 ```
