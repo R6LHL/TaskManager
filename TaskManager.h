@@ -22,7 +22,8 @@ class TaskManager
 	 
 	public:
 	
-	TaskManager(void){
+	TaskManager(void)
+	{
 		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; i++)
 		{
 			taskQueue_[i] = 0;
@@ -32,142 +33,146 @@ class TaskManager
 	}
 	
 	//functions
-	
-	void clearTasks_(void){
-	noInterrupts();
-	
-	for (byte i=0; i < T_TASK_QUEUE_SIZE; ++i)
+///////////////////////////////////////////////////////////////////////////////////////////////	
+	void clearTasks_(void)
 	{
-		taskQueue_[i] = 0;
-		delayedTasksQueue_[i] = 0;
-		taskDelaysQueue_[i] = 0;
-	}
+		noInterrupts();
 	
-	currentTask_ = 0;
-	
-	interrupts();
-}
-
-void ProcessTaskQueue_(void){
-	noInterrupts();
-	
-	currentTask_ = taskQueue_[0]; // set taskQueue[0] to execute
-	
-	for (unsigned char i = 0; i < (T_TASK_QUEUE_SIZE-1); ++i)
+		for (byte i=0; i < T_TASK_QUEUE_SIZE; ++i)
 		{
-			taskQueue_[i] = taskQueue_[i+1];						// Shift taskQueue
+			taskQueue_[i] = 0;
+			delayedTasksQueue_[i] = 0;
+			taskDelaysQueue_[i] = 0;
 		}
-		
-	interrupts();
 	
-	if (currentTask_ !=0)
+		currentTask_ = 0;
+	
+		interrupts();
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////
+	void ProcessTaskQueue_(void)
+	{
+		noInterrupts();
+	
+		currentTask_ = taskQueue_[0]; // set taskQueue[0] to execute
+	
+		for (unsigned char i = 0; i < (T_TASK_QUEUE_SIZE-1); ++i)
+			{
+				taskQueue_[i] = taskQueue_[i+1];						// Shift taskQueue
+			}
+		
+		interrupts();
+	
+		if (currentTask_ !=0)
 		{
 			currentTask_();
 		}
 		else return;
 		// execute current task
-}
-
-void TimerTaskService_(void){						// This function must be called from timer interrupt handler
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////
+	void TimerTaskService_(void){						// This function must be called from timer interrupt handler
 																	// So it haven't cli() and sei()
-	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)			// Check taskDelaysQueue for !=0 and decrement it
-	{
-		if (taskDelaysQueue_[i] != 0)
+		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)			// Check taskDelaysQueue for !=0 and decrement it
 		{
-			(taskDelaysQueue_[i])--;
-		}
-		else
-		{
-			for (unsigned char i1 = 0; i1 < T_TASK_QUEUE_SIZE; ++i1)		// If taskDelay == 0 - put task to TaskQueue at free place
+			if (taskDelaysQueue_[i] != 0)
 			{
-				if ((taskQueue_[i1] == 0) && (delayedTasksQueue_[i] !=0 ))	// ??But what if there are no free places???
-				{
-					taskQueue_[i1] = delayedTasksQueue_[i];
-					delayedTasksQueue_[i] = 0;								// Delete Task from delayedTaskQueue
-					taskDelaysQueue_[i] = 0;
-					break;
-				}
+				(taskDelaysQueue_[i])--;
 			}
-		}	
-	}
-}
-
-void SetTask_(void(*f)(void), unsigned int t){
-	
-	bool copy_detected = false;
-	
-	noInterrupts();
-		
-	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
-	{
-		if ((delayedTasksQueue_[i] == f) || (taskQueue_[i] == f)) //Check for copies
-		{
-			copy_detected = true;
-			break;
+			else
+			{
+				for (unsigned char i1 = 0; i1 < T_TASK_QUEUE_SIZE; ++i1)		// If taskDelay == 0 - put task to TaskQueue at free place
+				{
+					if ((taskQueue_[i1] == 0) && (delayedTasksQueue_[i] !=0 ))	// ??But what if there are no free places???
+					{
+						taskQueue_[i1] = delayedTasksQueue_[i];
+						delayedTasksQueue_[i] = 0;								// Delete Task from delayedTaskQueue
+						taskDelaysQueue_[i] = 0;
+						break;
+					}
+				}
+			}	
 		}
 	}
+///////////////////////////////////////////////////////////////////////////////////////////////
+	void SetTask_(void(*f)(void), unsigned int t){
+	
+		bool copy_detected = false;
+	
+		noInterrupts();
 		
-	if (copy_detected == false)
-	{
 		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
 		{
-			if ((delayedTasksQueue_[i] == 0))
+			if ((delayedTasksQueue_[i] == f) || (taskQueue_[i] == f)) //Check for copies
 			{
-				delayedTasksQueue_[i] = f;
-				taskDelaysQueue_[i] = t;
+				copy_detected = true;
 				break;
 			}
 		}
-	}
 		
-	interrupts();
-		
-}
-
-void DeleteTask_(void(*f)(void)){
-	
-	noInterrupts();
-		
-	if (currentTask_ == f)
-	{
-		currentTask_ = 0;
-	}
-		
-	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
-	{
-		if (f == taskQueue_[i])
+		if (copy_detected == false)
 		{
-			taskQueue_[i] = 0;
+			for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+			{
+				if ((delayedTasksQueue_[i] == 0))
+				{	
+					delayedTasksQueue_[i] = f;
+					taskDelaysQueue_[i] = t;
+					break;
+				}
+			}
 		}
+		
+		interrupts();
+		
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////
+	void DeleteTask_(void(*f)(void))
+	{
+	
+		noInterrupts();
+		
+		if (currentTask_ == f)
+		{
+			currentTask_ = 0;
+		}
+		
+		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+		{
+			if (f == taskQueue_[i])
+			{
+				taskQueue_[i] = 0;
+			}
 			
-		if (f == delayedTasksQueue_[i])
-		{
-			delayedTasksQueue_[i] = 0;
-			taskDelaysQueue_[i] = 0;
+			if (f == delayedTasksQueue_[i])
+			{
+				delayedTasksQueue_[i] = 0;
+				taskDelaysQueue_[i] = 0;
+			}
 		}
+		
+		interrupts();
 	}
-		
-	interrupts();
-}
-
-void ChangeTaskDelay_(void(*f)(void), unsigned int t){
-	
-	noInterrupts();
-		
-	for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+///////////////////////////////////////////////////////////////////////////////////////////////
+	void ChangeTaskDelay_(void(*f)(void), unsigned int t)
 	{
-		if (delayedTasksQueue_[i] == f)
-		{
-			taskDelaysQueue_[i] = t;
-		}
-	}
+	
+		noInterrupts();
 		
-	interrupts();
+		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+		{
+			if (delayedTasksQueue_[i] == f)
+			{
+				taskDelaysQueue_[i] = t;
+			}
+		}
+		
+		interrupts();
 	
-}
-	
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////	
 };
 
 
 
-#endif
+#endif //__TASKMANAGER_H__
