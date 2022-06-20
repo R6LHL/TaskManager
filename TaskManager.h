@@ -95,37 +95,38 @@ class TaskManager
 		}
 	}
 ///////////////////////////////////////////////////////////////////////////////////////////////
-	void SetTask_(void(*f)(void), unsigned int t){
+	void SetTask_(void(*f)(void), unsigned int t)
+	  {
 	
-		bool copy_detected = false;
+		  bool copy_detected = false;
 	
-		noInterrupts();
+		  noInterrupts();
 		
-		for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
-		{
-			if ((delayedTasksQueue_[i] == f) || (taskQueue_[i] == f)) //Check for copies
-			{
-				copy_detected = true;
-				break;
-			}
-		}
+		  for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+		  {
+			  if ((delayedTasksQueue_[i] == f) || (taskQueue_[i] == f)) //Check for copies
+			  {
+				  copy_detected = true;
+				  break;
+			  }
+		  }
 		
-		if (copy_detected == false)
-		{
-			for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
-			{
-				if ((delayedTasksQueue_[i] == 0))
-				{	
-					delayedTasksQueue_[i] = f;
-					taskDelaysQueue_[i] = t;
-					break;
-				}
-			}
-		}
+		  if (copy_detected == false)
+		  {
+			  for (unsigned char i = 0; i < T_TASK_QUEUE_SIZE; ++i)
+			  {
+				  if ((delayedTasksQueue_[i] == 0))
+				  {	
+					  delayedTasksQueue_[i] = f;
+					  taskDelaysQueue_[i] = t;
+					  break;
+				  }
+			  }
+		  }
 		
-		interrupts();
+		  interrupts();
 		
-	}
+	  }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 	void DeleteTask_(void(*f)(void))
 	{
